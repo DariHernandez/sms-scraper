@@ -1,13 +1,21 @@
 import os
+import bs4
+import requests
 from config import Config
 from logs import logger
-import requests
-import bs4
+from concurrent.futures import ThreadPoolExecutor
 
+# Scraping variables
 headers = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36", 
 }
 home_page = "https://receive-smss.com/"
+
+# Get credentials from config file
+credentials = Config ()
+threads_num = credentials.get ("threads_num")
+
+# Initial debug
 logger.info ("")
 logger.info ("Running")
 
@@ -50,13 +58,17 @@ def get_message (num):
         body_sms = soup.select (selector_body_sms)[0].getText().replace("\n", "")
         date_sms = soup.select (selector_date_sms)[0].getText().replace("\n", "")
 
-        logger.info (f"\tFrom: {from_sms} | Body: {body_sms} | Date: {date_sms}")
+        logger.info (f"Number: {num.replace('sms/', '')} | From: {from_sms} | Body: {body_sms} | Date: {date_sms}")
 
 def main (): 
+
+    # Setup pull of threads
+    excecutor = ThreadPoolExecutor(max_workers=threads_num)
+
+    # Run thread for each number
     nums = get_nums ()
     for num in nums:
-        logger.info (f"Number: {num.replace('sms/', '')}")
-        messages = get_message (num)
+        excecutor.submit (get_message, num)
 
 if __name__ == "__main__":
     main()
