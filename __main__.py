@@ -18,6 +18,7 @@ credentials = Config ()
 threads_num = credentials.get ("threads_num")
 debug_mode = credentials.get ("debug_mode") 
 loop_mode = credentials.get ("loop_mode")
+wait_time = credentials.get ("wait_time")
 
 # History file
 history_path = os.path.join (os.path.dirname (__file__), "history.json")
@@ -26,9 +27,6 @@ globals.history = history_obj.get ("history")
 
 # Initial debug
 logger.info ("")
-
-# Setup pool of threads
-excecutor = ThreadPoolExecutor(max_workers=threads_num + 1)
 
 def thread_killer ():
     """Requests a user input for kill an threads"""
@@ -50,7 +48,7 @@ def get_nums ():
     soup = bs4.BeautifulSoup(res.text, "html.parser")
     
     # Get numbers
-    logger.debug ("Fetting number links...")
+    logger.debug ("Getting number links...")
     valid_nums = []
     selector_nums = ".number-boxes > a"
     nums = soup.select (selector_nums)
@@ -110,6 +108,9 @@ def main ():
     """Main wrokflow of the program: create thread for extract data
     """
 
+    # Setup pool of threads
+    excecutor = ThreadPoolExecutor(max_workers=threads_num + 1)
+
     # Run therad killer
     if debug_mode:
         excecutor.submit(thread_killer)
@@ -132,9 +133,16 @@ def main ():
 if __name__ == "__main__":
 
     # Main loop
+    start_time = time.time()
     while True:
         if globals.running:
             main ()      
+            
+            # Wait time
+            end_time = time.time()
+            delta_time = end_time - start_time
+            if delta_time < wait_time:
+                time.sleep (wait_time - delta_time)
         else:
             break
 
