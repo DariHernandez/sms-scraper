@@ -1,6 +1,7 @@
 import os
 import bs4
 import requests
+import globals
 from config import Config
 from logs import logger
 from concurrent.futures import ThreadPoolExecutor
@@ -17,7 +18,16 @@ threads_num = credentials.get ("threads_num")
 
 # Initial debug
 logger.info ("")
-logger.info ("Running")
+
+def thread_killer ():
+    """Requests a user input for kill an threads"""
+    while True:
+        user_input = input ("\nThreads running. press 'q' to end the program.\n\n")
+        if 'q' in user_input.lower():
+            globals.running = False
+            return None
+        else:
+            continue
 
 def get_nums ():
     """Returns the number list from home page"""
@@ -39,8 +49,13 @@ def get_nums ():
 
     return valid_nums
 
-def get_message (num):
-    """Returns the list of message for the current number"""
+def send_message (num):
+    """Get all message for the current number, and send to the API"""
+
+    # End thread 
+    if not globals.running:
+        return None
+
     num_page = f"{home_page}{num}/"
     res = requests.get (num_page, headers=headers)
     res.raise_for_status()
@@ -49,6 +64,10 @@ def get_message (num):
     selector_row = ".table.table-bordered.wrptable.tbdif > tbody > tr"
     rows = soup.select (selector_row)
     for row_index in range(1, len(rows) + 1):
+
+        # End thread 
+        if not globals.running:
+            return None
         
         selector_from_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(1)"
         selector_body_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(2)"
@@ -63,12 +82,15 @@ def get_message (num):
 def main (): 
 
     # Setup pull of threads
-    excecutor = ThreadPoolExecutor(max_workers=threads_num)
+    excecutor = ThreadPoolExecutor(max_workers=threads_num + 1)
+
+    # Run therad killer
+    excecutor.submit(thread_killer)
 
     # Run thread for each number
     nums = get_nums ()
     for num in nums:
-        excecutor.submit (get_message, num)
+        excecutor.submit (send_message, num)
 
 if __name__ == "__main__":
     main()

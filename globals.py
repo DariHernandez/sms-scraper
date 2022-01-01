@@ -1,12 +1,3 @@
-global status
-global loading
-global db_manager
-global tables
-global truncate
+global running
 
-status = "Loading..."
-loading = False
-db_manager = None
-tables = None
-truncate = False
-
+running = True
