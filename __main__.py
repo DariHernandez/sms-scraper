@@ -1,6 +1,6 @@
 import os
 import bs4
-import json
+import time
 import requests
 import globals
 from config import Config
@@ -17,6 +17,7 @@ home_page = "https://receive-smss.com/"
 credentials = Config ()
 threads_num = credentials.get ("threads_num")
 debug_mode = credentials.get ("debug_mode") 
+loop_mode = credentials.get ("loop_mode")
 
 # History file
 history_path = os.path.join (os.path.dirname (__file__), "history.json")
@@ -92,9 +93,12 @@ def send_message (num):
 
         row_data = [num_formated, from_sms, body_sms]
         if not row_data in globals.history:
-            # Save data and send to the api
+            # Save row in local
             globals.history.append (row_data)
             logger.info (f"Number: {num_formated} | From: {from_sms} | Body: {body_sms} | Date: {date_sms}")
+
+            # TODO: Send data to API
+            
         else:
             # Skip duplicates
             break
@@ -102,7 +106,9 @@ def send_message (num):
     # Update history file when table extraction ends
     history_obj.update ("history", globals.history)    
 
-if __name__ == "__main__":
+def main ():
+    """Main wrokflow of the program: create thread for extract data
+    """
 
     # Run therad killer
     if debug_mode:
@@ -110,9 +116,27 @@ if __name__ == "__main__":
 
     # Run thread for each number
     nums = get_nums ()
-    for num in nums[0:2]:
+    for num in nums:
         excecutor.submit (send_message, num)
 
     # Message for end the program
     if debug_mode:
         print("\nWeb scraping ended. Press 'q' to close the program.\n\n")
+
+    # Run program inly once
+    if not loop_mode:
+        globals.running = False
+
+    excecutor.shutdown(wait=True)
+
+if __name__ == "__main__":
+
+    # Main loop
+    while True:
+        if globals.running:
+            main ()      
+        else:
+            break
+
+
+    
