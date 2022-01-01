@@ -1,5 +1,6 @@
 import os
 import bs4
+import json
 import requests
 import globals
 from config import Config
@@ -15,9 +16,18 @@ home_page = "https://receive-smss.com/"
 # Get credentials from config file
 credentials = Config ()
 threads_num = credentials.get ("threads_num")
+debug_mode = credentials.get ("debug_mode") 
+
+# History file
+history_path = os.path.join (os.path.dirname (__file__), "history.json")
+history_obj = Config (history_path)
+globals.history = history_obj.get ("history")
 
 # Initial debug
 logger.info ("")
+
+# Setup pool of threads
+excecutor = ThreadPoolExecutor(max_workers=threads_num + 1)
 
 def thread_killer ():
     """Requests a user input for kill an threads"""
@@ -52,6 +62,8 @@ def get_nums ():
 def send_message (num):
     """Get all message for the current number, and send to the API"""
 
+    num_formated = num.replace('sms/', '')
+
     # End thread 
     if not globals.running:
         return None
@@ -68,7 +80,8 @@ def send_message (num):
         # End thread 
         if not globals.running:
             return None
-        
+
+        # Get message data
         selector_from_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(1)"
         selector_body_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(2)"
         selector_date_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(3)"
@@ -77,20 +90,29 @@ def send_message (num):
         body_sms = soup.select (selector_body_sms)[0].getText().replace("\n", "")
         date_sms = soup.select (selector_date_sms)[0].getText().replace("\n", "")
 
-        logger.info (f"Number: {num.replace('sms/', '')} | From: {from_sms} | Body: {body_sms} | Date: {date_sms}")
+        row_data = [num_formated, from_sms, body_sms]
+        if not row_data in globals.history:
+            # Save data and send to the api
+            globals.history.append (row_data)
+            logger.info (f"Number: {num_formated} | From: {from_sms} | Body: {body_sms} | Date: {date_sms}")
+        else:
+            # Skip duplicates
+            break
 
-def main (): 
+    # Update history file when table extraction ends
+    history_obj.update ("history", globals.history)    
 
-    # Setup pull of threads
-    excecutor = ThreadPoolExecutor(max_workers=threads_num + 1)
+if __name__ == "__main__":
 
     # Run therad killer
-    excecutor.submit(thread_killer)
+    if debug_mode:
+        excecutor.submit(thread_killer)
 
     # Run thread for each number
     nums = get_nums ()
-    for num in nums:
+    for num in nums[0:2]:
         excecutor.submit (send_message, num)
 
-if __name__ == "__main__":
-    main()
+    # Message for end the program
+    if debug_mode:
+        print("\nWeb scraping ended. Press 'q' to close the program.\n\n")
