@@ -19,6 +19,7 @@ threads_num = credentials.get ("threads_num")
 debug_mode = credentials.get ("debug_mode") 
 loop_mode = credentials.get ("loop_mode")
 wait_time = credentials.get ("wait_time")
+api_key = credentials.get ("api_key")
 
 # History file
 history_path = os.path.join (os.path.dirname (__file__), "history.json")
@@ -95,7 +96,9 @@ def send_message (num):
             globals.history.append (row_data)
             logger.info (f"Number: {num_formated} | From: {from_sms} | Body: {body_sms} | Date: {date_sms}")
 
-            # TODO: Send data to API
+            # Send data to API
+            api_url = f"https://receive-sms.live/receive?sender={from_sms}&msg={body_sms}&msg_id=&number={num_formated}&key={api_key}"
+            requests.post (api_url, headers=headers)
             
         else:
             # Skip duplicates
