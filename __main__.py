@@ -53,11 +53,18 @@ def get_nums ():
     # Get numbers
     logger.debug ("Getting number links...")
     valid_nums = []
-    selector_nums = ".number-boxes > a"
+    selector_nums = ".number-boxes .number-boxes-item"
     nums = soup.select (selector_nums)
     for num in nums:
-        if "sms" in num.attrs["href"]:
-            valid_nums.append (num.attrs["href"][1:])
+
+        # Ignore premium and private numbers
+        classes = num.attrs["class"]
+        if "premiumNumber" in classes or "private-number" in classes:
+            continue 
+
+        # Get number link
+        link = num.select ("a")[0].attrs["href"]
+        valid_nums.append (link)
 
     return valid_nums
 
