@@ -17,6 +17,8 @@ For avoid duplicated, the program use a local json file: **history.json**.
 
 For each row in the SMS table, from each number, the script check if the current message have been saved in the history file; if yes, it means that all the message after the curren message, have already been extracted and sent to the API, so the programa skips them an continues with the next table. 
 
+*Note: The first time you run the program, it will take several minutes because it must extract all messages from all numbers. Later (once the **history.json** file is generated) the data extraction will be much faster.*
+
 # Install
 ## Third party modules
 
@@ -40,7 +42,8 @@ All setting are saved in the **config.json** file.
     "threads_num": 50,
     "debug_mode": false,
     "loop_mode": true,
-    "wait_time": 60
+    "wait_time": 60, 
+    "api_key": "p8AQEUBBW**********"
 }
 ```
 
@@ -64,7 +67,7 @@ _
 
 If you type "q" and enter key, in any moment, the program will kill al threads and finish.
 
-*Note: this variable its usefull for testing (for example, for found the best number of threads). but if you run in any way that hides the terminal (for exaple, with cron), use this option should be in **false***
+*Note: this variable its usefull for testing (for example, for found the best number of threads). but if you run in any way that hides the terminal (like cron), use this option should be in **false***
 
 * ### loop_mode
 
@@ -77,6 +80,10 @@ Minimum of **seconds** to wait after each web scraping loop (only available if *
 For sample, if the program takes 40 seconds to extract the new message, and you setup 60 to this variable, the program will wait 20 extra seconds, so that there is at least 60 seconds between each web scraping loop.
 
 *Note: this variable is usefull for save resources and avoit web scraping detection.*
+
+* ### api_key
+
+Api key for send datas to the API
 
 ## Clean files
 
@@ -92,7 +99,8 @@ File where the messages are saved for avoid duplicates.
 If you clean the file, keep the following content:
 ```json
 {
-    "history": []
+    "history": [],
+    "ids": []
 }
 ```
 

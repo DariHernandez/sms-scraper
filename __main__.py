@@ -1,6 +1,7 @@
 import os
 import bs4
 import time
+import hashlib
 import requests
 import globals
 from config import Config
@@ -25,6 +26,7 @@ api_key = credentials.get ("api_key")
 history_path = os.path.join (os.path.dirname (__file__), "history.json")
 history_obj = Config (history_path)
 globals.history = history_obj.get ("history")
+globals.ids = history_obj.get ("ids")
 
 # Initial debug
 logger.info ("")
@@ -94,18 +96,32 @@ def send_message (num):
         if not row_data in globals.history:
             # Save row in local
             globals.history.append (row_data)
-            logger.info (f"Number: {num_formated} | From: {from_sms} | Body: {body_sms} | Date: {date_sms}")
+            message = f"Number: {num_formated} | From: {from_sms} | Body: {body_sms} | Date: {date_sms}"
+            message_temp = message
+
+            # Generate id
+            while True:
+                message_temp += "|"
+                id_sms = hashlib.md5(message_temp.encode("utf-8")).hexdigest()
+                if not id_sms in globals.ids:
+                    globals.ids.append(id_sms)
+                    break
+
+            # Debug lines
+            logger.info (f"{message} | Id: {id_sms}")
 
             # Send data to API
-            api_url = f"https://receive-sms.live/receive?sender={from_sms}&msg={body_sms}&msg_id=&number={num_formated}&key={api_key}"
-            requests.post (api_url, headers=headers)
+            api_url = f"https://receive-sms.live/receive?sender={from_sms}&msg={body_sms}&msg_id={id_sms}&number={num_formated}&key={api_key}"
+            res = requests.post (api_url, headers=headers)
+            res.raise_for_status()
             
         else:
             # Skip duplicates
             break
 
     # Update history file when table extraction ends
-    history_obj.update ("history", globals.history)    
+    history_obj.update ("history", globals.history) 
+    history_obj.update ("ids", globals.ids)    
 
 def main ():
     """Main wrokflow of the program: create thread for extract data
