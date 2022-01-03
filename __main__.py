@@ -33,12 +33,6 @@ hostname = credentials.get ("hostname")
 # Connect to database
 database = MySQL(hostname, dbname, user, password)
 
-# History file
-history_path = os.path.join (os.path.dirname (__file__), "history.json")
-history_obj = Config (history_path)
-globals.history = history_obj.get ("history")
-globals.ids = history_obj.get ("ids")
-
 # Initial debug
 logger.info ("")
 
@@ -133,7 +127,6 @@ def send_message (num):
 
                 # End loop
                 if not duplicated_id:
-                    globals.ids.append(id_sms)
                     break
 
             # Debug lines
@@ -153,10 +146,6 @@ def send_message (num):
         else:
             # Skip duplicates
             break
-
-    # Update history file when table extraction ends
-    history_obj.update ("history", globals.history) 
-    history_obj.update ("ids", globals.ids)    
 
 def main ():
     """Main wrokflow of the program: create thread for extract data
