@@ -2,6 +2,7 @@ import os
 import sys
 import mysql.connector
 from database._db_manager import _DB_manager
+from logs import logger
 
 class MySQL (_DB_manager): 
     
@@ -68,7 +69,7 @@ class MySQL (_DB_manager):
             tables.append (table_row[2])
             
         # Logs
-        print (f"Returned table names")
+        logger.debug (f"Returned table names")
         
         return tables
 
@@ -88,6 +89,6 @@ class MySQL (_DB_manager):
         rows = self.run_sql (sql)
         
         # Logs
-        print (f"Returned rows of table {table}")
+        logger.debug (f"Returned rows of table {table}")
         
         return rows

@@ -1,6 +1,14 @@
 import os
 import sys
 import datetime
+import sys
+from logs import logger
+
+# current_folder = os.path.dirname (__file__)
+# parent_folder = os.path.dirname (current_folder)
+
+# sys.path.insert (0, parent_folder)
+# import logger
 
 class _DB_manager (): 
     """ Connect to data base and save data
@@ -33,14 +41,14 @@ class _DB_manager ():
     
     def error (self, err, sql=""): 
         """
-        Print credential error and update status
+        Debug credential error and update status
         """
         
         error_formated = "Database conecction error."
         error_formated += "\nPlease check your credentials and your query.\n"
         error_formated += f"\n{sql}"
 
-        print (error_formated)
+        logger.error (error_formated)
         
 
     def get_cursor_connector (self): 
@@ -68,7 +76,7 @@ class _DB_manager ():
         sql = "TRUNCATE TABLE {}".format(table)
         
         # Logs
-        print (f"Table truncate: {table}")
+        logger.debug (f"Table truncate: {table}")
         
         # run sql and commit changes
         self.run_sql(sql)
@@ -86,7 +94,7 @@ class _DB_manager ():
             self.run_sql(sql)
         
         # Logs
-        print ("All tables truncated")
+        logger.debug ("All tables truncated")
     
     def insert_rows (self, table="", columns=[], data=[], nstring=True): 
         """
@@ -101,15 +109,13 @@ class _DB_manager ():
             values_query = self.__get_sql_from_list__ (row, nstring=nstring, quotes=True)
             
             sql = "INSERT INTO {} ({}) VALUES ({})".format (table, columns_query, values_query)
-            
-            # print (sql)
-                                    
+                                                
             # run sql and commit changes
             self.run_sql (sql)
             
         # Logs
         num_rows = len (data)
-        print (f"Inserted {num_rows} rows in table {table}")
+        logger.debug (f"Inserted {num_rows} rows in table {table}")
     
     def __get_sql_from_list__ (self, values, nstring, quotes): 
         """
@@ -158,7 +164,7 @@ class _DB_manager ():
         columns = self.run_sql (sql)
         
         # Logs
-        print (f"Returned columns of table {table}")
+        logger.debug (f"Returned columns of table {table}")
         
         return columns
     
@@ -195,5 +201,5 @@ class _DB_manager ():
         self.run_sql(sql)
 
         # Logs
-        print (f"Table created: {table_name}")
+        logger.debug (f"Table created: {table_name}")
    
