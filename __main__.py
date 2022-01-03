@@ -111,8 +111,18 @@ def send_message (num):
 
         if not duplicated:
 
+            # Format only for logs
+            if len (from_sms) > 10:
+                from_sms_formated = f"{from_sms[:10]}..."
+
+            if len (body_sms) > 20:
+                body_sms_formated = f"{body_sms[:20]}..."
+
+            if len (date_sms) > 10:
+                date_sms_formated = f"{date_sms[:10]}..."
+
             # Save row in local
-            message = f"Number: {num_formated} | From: {from_sms} | Body: {body_sms} | Date: {date_sms}"
+            message = f"Number: {num_formated} | From: {from_sms_formated} | Body: {body_sms_formated} | Date: {date_sms_formated}"
             message_temp = message
 
             # Generate id
