@@ -96,13 +96,26 @@ def send_message (num):
         selector_body_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(2)"
         selector_date_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(3)"
 
-        from_sms = str(soup.select (selector_from_sms)[0].getText()).replace("\n", "").replace('"', '\"').replace("'", "\'").replace('a"', "")
-        body_sms = str(soup.select (selector_body_sms)[0].getText()).replace("\n", "").replace('"', '\"').replace("'", "\'").replace('a"', "")
-        date_sms = str(soup.select (selector_date_sms)[0].getText()).replace("\n", "").replace('"', '\"').replace("'", "\'").replace('a"', "")
+        from_sms = str(soup.select (selector_from_sms)[0].getText()).replace("\n", "").replace('"', '').replace("'", "\'").replace('a"', "")
+        body_sms = str(soup.select (selector_body_sms)[0].getText()).replace("\n", "").replace('"', '').replace("'", "\'").replace('a"', "")
+        date_sms = str(soup.select (selector_date_sms)[0].getText()).replace("\n", "").replace('"', '').replace("'", "\'").replace('a"', "")
 
         row_data = [num_formated, from_sms, body_sms]
-        if not row_data in globals.history:
 
+        # Skip duplicates
+        query = f"""
+                SELECT * 
+                FROM `history` 
+                WHERE 
+                    `body` = "{body_sms}" 
+                    and 
+                    `from_number` = "{from_sms}" 
+                    and 
+                    `number` = "{num_formated}";"""
+                    
+        duplicated = database.run_sql (query)
+
+        if not duplicated:
 
             # Save row in local
             message = f"Number: {num_formated} | From: {from_sms} | Body: {body_sms} | Date: {date_sms}"
@@ -110,18 +123,25 @@ def send_message (num):
 
             # Generate id
             while True:
+                # Generate ID with extra character
                 message_temp += "|"
                 id_sms = hashlib.md5(message_temp.encode("utf-8")).hexdigest()
-                if not id_sms in globals.ids:
+
+                # Validate id
+                query = f"""SELECT `id` FROM `history` WHERE id = "{id_sms}";"""
+                duplicated_id = database.run_sql (query)
+
+                # End loop
+                if not duplicated_id:
                     globals.ids.append(id_sms)
                     break
+
+            # Debug lines
+            logger.info (f"{message} | Id: {id_sms}")
 
             # Save in database
             query = f"INSERT INTO {table} ({id_sms}, {num_formated}, {from_sms}, {body_sms})"
             database.insert_rows (table=table, columns=["id", "number", "from_number", "body"], data=[[id_sms, num_formated, from_sms, body_sms]], nstring=False)
-
-            # Debug lines
-            logger.info (f"{message} | Id: {id_sms}")
 
             # Send data to API
             if not debug_mode:

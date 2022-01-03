@@ -1,1 +1,1 @@
-CREATE TABLE `sms`.`receive-smss` ( `id` VARCHAR(32) NOT NULL , `number` INT NOT NULL , `from_number` VARCHAR(20) NOT NULL , `body` VARCHAR(200) NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB;
+CREATE TABLE `sms`.`history` ( `id` VARCHAR(32) NOT NULL , `number` INT NOT NULL , `from_number` VARCHAR(20) NOT NULL , `body` VARCHAR(200) NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB;
