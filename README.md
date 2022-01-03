@@ -13,11 +13,12 @@ The program get the number from the home page with a single thread, after it, ex
 
 ### Duplicated messages
 
-For avoid duplicated, the program use a local json file: **history.json**.
+For avoid duplicated, the program use a a data base.
+You can create the table with the script: **sql/create_table.sql**
 
-For each row in the SMS table, from each number, the script check if the current message have been saved in the history file; if yes, it means that all the message after the curren message, have already been extracted and sent to the API, so the programa skips them an continues with the next table. 
+For each row in the SMS table, from each number, the script check if the current message have been saved in the the table, if yes, it means that all the message after the current message, have already been extracted and sent to the API, so the programa skips them an continues with the next table. 
 
-*Note: The first time you run the program, it will take several minutes because it must extract all messages from all numbers. Later (once the **history.json** file is generated) the data extraction will be much faster.*
+*Note: The first time you run the program, it will take several minutes because it must extract all messages from all numbers. Later the data extraction will be much faster.*
 
 # Install
 ## Third party modules
@@ -43,7 +44,12 @@ All setting are saved in the **config.json** file.
     "debug_mode": false,
     "loop_mode": true,
     "wait_time": 60, 
-    "api_key": "p8AQEUBBW**********"
+    "api_key": "p8AQEUBBW**********",
+    "dbname": "sms",
+    "table": "history",
+    "user": "daridev2",
+    "password": "alice1999++",
+    "hostname": "localhost"
 }
 ```
 
@@ -77,6 +83,26 @@ For sample, if the program takes 40 seconds to extract the new message, and you 
 * ### api_key
 
 Api key for send datas to the API
+
+* ### dbname
+
+Name of the databse with the history table
+
+* ### table
+
+Name of the history table
+
+* ### user
+
+User name for the database
+
+* ### password
+
+User password for the database
+
+* ### hostname
+
+IP / hostname of rthe database (local or remote)
 
 ## Clean files
 
