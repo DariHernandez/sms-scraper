@@ -6,6 +6,7 @@ import requests
 import globals
 from config import Config
 from logs import logger
+from database.my_sql import MySQL
 from concurrent.futures import ThreadPoolExecutor
 
 # Scraping variables
@@ -14,13 +15,23 @@ headers = {
 }
 home_page = "https://receive-smss.com/"
 
-# Get credentials from config file
+# Setting credentials
 credentials = Config ()
 threads_num = credentials.get ("threads_num")
 debug_mode = credentials.get ("debug_mode") 
 loop_mode = credentials.get ("loop_mode")
 wait_time = credentials.get ("wait_time")
 api_key = credentials.get ("api_key")
+
+# Database credentials
+dbname = credentials.get ("dbname")
+table = credentials.get ("table")
+user = credentials.get ("user")
+password = credentials.get ("password")
+hostname = credentials.get ("hostname")
+
+# Connect to database
+database = MySQL(hostname, dbname, user, password)
 
 # History file
 history_path = os.path.join (os.path.dirname (__file__), "history.json")
@@ -91,8 +102,9 @@ def send_message (num):
 
         row_data = [num_formated, from_sms, body_sms]
         if not row_data in globals.history:
+
+
             # Save row in local
-            globals.history.append (row_data)
             message = f"Number: {num_formated} | From: {from_sms} | Body: {body_sms} | Date: {date_sms}"
             message_temp = message
 
@@ -103,6 +115,10 @@ def send_message (num):
                 if not id_sms in globals.ids:
                     globals.ids.append(id_sms)
                     break
+
+            # Save in database
+            query = f"INSERT INTO {table} ({id_sms}, {num_formated}, {from_sms}, {body_sms})"
+            database.insert_rows (table=table, columns=["id", "number", "from_number", "body"], data=[[id_sms, num_formated, from_sms, body_sms]], nstring=False)
 
             # Debug lines
             logger.info (f"{message} | Id: {id_sms}")
