@@ -31,16 +31,6 @@ globals.ids = history_obj.get ("ids")
 # Initial debug
 logger.info ("")
 
-def thread_killer ():
-    """Requests a user input for kill an threads"""
-    while True:
-        user_input = input ("\nThreads running. press 'q' to end the program.\n\n")
-        if 'q' in user_input.lower():
-            globals.running = False
-            return None
-        else:
-            continue
-
 def get_nums ():
     """Returns the number list from home page"""
 
@@ -71,7 +61,7 @@ def get_nums ():
 def send_message (num):
     """Get all message for the current number, and send to the API"""
 
-    num_formated = num.replace('sms/', '')
+    num_formated = num.replace('/sms/', '')
 
     # End thread 
     if not globals.running:
@@ -95,9 +85,9 @@ def send_message (num):
         selector_body_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(2)"
         selector_date_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(3)"
 
-        from_sms = soup.select (selector_from_sms)[0].getText().replace("\n", "")
-        body_sms = soup.select (selector_body_sms)[0].getText().replace("\n", "")
-        date_sms = soup.select (selector_date_sms)[0].getText().replace("\n", "")
+        from_sms = str(soup.select (selector_from_sms)[0].getText()).replace("\n", "").replace('"', '\"').replace("'", "\'").replace('a"', "")
+        body_sms = str(soup.select (selector_body_sms)[0].getText()).replace("\n", "").replace('"', '\"').replace("'", "\'").replace('a"', "")
+        date_sms = str(soup.select (selector_date_sms)[0].getText()).replace("\n", "").replace('"', '\"').replace("'", "\'").replace('a"', "")
 
         row_data = [num_formated, from_sms, body_sms]
         if not row_data in globals.history:
@@ -118,9 +108,11 @@ def send_message (num):
             logger.info (f"{message} | Id: {id_sms}")
 
             # Send data to API
-            api_url = f"https://receive-sms.live/receive?sender={from_sms}&msg={body_sms}&msg_id={id_sms}&number={num_formated}&key={api_key}"
-            res = requests.post (api_url, headers=headers)
-            res.raise_for_status()
+            if not debug_mode:
+
+                api_url = f"https://receive-sms.live/receive?sender={from_sms}&msg={body_sms}&msg_id={id_sms}&number={num_formated}&key={api_key}"
+                res = requests.get (api_url, headers=headers)
+                res.raise_for_status()
             
         else:
             # Skip duplicates
@@ -135,40 +127,40 @@ def main ():
     """
 
     # Setup pool of threads
-    excecutor = ThreadPoolExecutor(max_workers=threads_num + 1)
+    excecutor = ThreadPoolExecutor(max_workers=threads_num)
 
-    # Run therad killer
-    if debug_mode:
-        excecutor.submit(thread_killer)
+    # Get numbers
+    nums = get_nums ()
 
     # Run thread for each number
-    nums = get_nums ()
     for num in nums:
         excecutor.submit (send_message, num)
 
-    # Message for end the program
-    if debug_mode:
-        print("\nWeb scraping ended. Press 'q' to close the program.\n\n")
+    # Wait to end threads 
+    excecutor.shutdown(wait=True)
 
     # Run program inly once
     if not loop_mode:
         globals.running = False
 
-    excecutor.shutdown(wait=True)
 
 if __name__ == "__main__":
 
     # Main loop
-    start_time = time.time()
     while True:
         if globals.running:
+            start_time = time.time()
             main ()      
             
             # Wait time
-            end_time = time.time()
-            delta_time = end_time - start_time
-            if delta_time < wait_time:
-                time.sleep (wait_time - delta_time)
+            if loop_mode:
+                end_time = time.time()
+                delta_time = end_time - start_time
+                if delta_time < wait_time:
+                    wait_secs = wait_time - delta_time
+                    logger.info (f"Waiting {int(wait_secs)} sec")
+                    time.sleep (wait_secs)
+                    start_time = time.time()
         else:
             break
 
