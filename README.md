@@ -58,14 +58,7 @@ Try different number for found you best settings.
 * ### debug_mode
 
 **true** o **false**. 
-Activating this variable, you will get by terminal a message like this: 
-
-```bash
-$ Threads running. press 'q' to end the program. 
-_
-```
-
-If you type "q" and enter key, in any moment, the program will kill al threads and finish.
+If *true*, the program extract the data, but dont made any api Call, if *false*, send all data to the api. 
 
 *Note: this variable its usefull for testing (for example, for found the best number of threads). but if you run in any way that hides the terminal (like cron), use this option should be in **false***
 
