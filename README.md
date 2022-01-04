@@ -20,6 +20,12 @@ For each row in the SMS table, from each number, the script check if the current
 
 *Note: The first time you run the program, it will take several minutes because it must extract all messages from all numbers. Later the data extraction will be much faster.*
 
+### Proxy
+
+You can use a proxy with login (ip, port, user and password) or without (only ip and port), updating the **config file**
+
+The script only support one proxy at the same time: the best option is use rotative proxies. 
+
 # Install
 ## Third party modules
 
@@ -44,6 +50,10 @@ All setting are saved in the **config.json** file.
     "debug_mode": false,
     "loop_mode": true,
     "wait_time": 60, 
+    "proxy_ip": "64.225.8.192",
+    "proxy_port": "80",
+    "proxy_user": "sample",
+    "proxy_password": "mypas123456",
     "api_key": "p8AQEUBBW**********",
     "dbname": "sms",
     "table": "history",
@@ -78,7 +88,25 @@ Minimum of **seconds** to wait after each web scraping loop (only available if *
 
 For sample, if the program takes 40 seconds to extract the new message, and you setup 60 to this variable, the program will wait 20 extra seconds, so that there is at least 60 seconds between each web scraping loop.
 
+If this variable is *0*, the program will skip the wait time.
+
 *Note: this variable is usefull for save resources and avoit web scraping detection.*
+
+* ### proxy_ip
+
+Ip or host name of the proxy service (optional).
+
+* ### proxy_port
+
+User for login to the proxy service, if ius required (optional).
+
+* ### proxy_user
+
+Password for login to the proxy service, if ius required (optional).
+
+* ### proxy_password
+
+Port of the proxy service (optional).
 
 * ### api_key
 

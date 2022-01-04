@@ -12,11 +12,6 @@ from logs import logger
 from database.my_sql import MySQL
 from concurrent.futures import ThreadPoolExecutor
 
-# Scraping variables
-headers = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36", 
-}
-home_page = "https://receive-smss.com/"
 
 # Setting credentials
 credentials = Config ()
@@ -26,12 +21,46 @@ loop_mode = credentials.get ("loop_mode")
 wait_time = credentials.get ("wait_time")
 api_key = credentials.get ("api_key")
 
+# P>roxy credentials
+proxy_ip = credentials.get ("proxy_ip")
+proxy_port = credentials.get ("proxy_port")
+proxy_user = credentials.get ("proxy_user")
+proxy_password = credentials.get ("proxy_password")
+
 # Database credentials
 dbname = credentials.get ("dbname")
 table = credentials.get ("table")
 user = credentials.get ("user")
 password = credentials.get ("password")
 hostname = credentials.get ("hostname")
+
+# Scraping variables
+headers = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36", 
+}
+home_page = "https://receive-smss.com/"
+
+# Generate proxy
+if proxy_ip and proxy_port:
+    if proxy_user and proxy_password:
+        proxy = f"{proxy_user}:{proxy_password}@{proxy_ip}:{proxy_port}"
+    else:
+        proxy = f"{proxy_ip}:{proxy_port}"
+
+    proxies = {
+        "http": f"http://{proxy}",
+        "https": f"http://{proxy}"
+    }
+
+else:
+    proxies = {}
+
+
+def requests_page (url):
+    res = requests.get (home_page, headers=headers)
+    res.raise_for_status()
+    soup = bs4.BeautifulSoup(res.text, "html.parser")
+
 
 def format_date (date_text):
     """Convert date in text to date in standar format"""
@@ -87,7 +116,7 @@ def get_nums ():
 
     # Requests to page
     logger.info ("Getting home page...")
-    res = requests.get (home_page, headers=headers)
+    res = requests.get (home_page, headers=headers, proxies=proxies)
     res.raise_for_status()
     soup = bs4.BeautifulSoup(res.text, "html.parser")
     
@@ -122,7 +151,7 @@ def send_message (num):
         return None
 
     num_page = f"{home_page}{num}/"
-    res = requests.get (num_page, headers=headers)
+    res = requests.get (num_page, headers=headers, proxies=proxies)
     res.raise_for_status()
     soup = bs4.BeautifulSoup(res.text, "html.parser")
 
@@ -214,8 +243,7 @@ if __name__ == "__main__":
     while True:
         if globals.running:
             start_time = time.time()
-            # main ()      
-            print ("Running")
+            main ()    
             
             # Wait time
             if loop_mode and wait_time:
