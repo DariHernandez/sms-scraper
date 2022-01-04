@@ -60,13 +60,13 @@ def get_nums ():
     """Returns the number list from home page"""
 
     # Requests to page
-    logger.debug ("Getting home page...")
+    logger.info ("Getting home page...")
     res = requests.get (home_page, headers=headers)
     res.raise_for_status()
     soup = bs4.BeautifulSoup(res.text, "html.parser")
     
     # Get numbers
-    logger.debug ("Getting number links...")
+    logger.info ("Getting number links...")
     valid_nums = []
     selector_nums = ".number-boxes .number-boxes-item"
     nums = soup.select (selector_nums)
@@ -100,6 +100,8 @@ def send_message (num):
     res.raise_for_status()
     soup = bs4.BeautifulSoup(res.text, "html.parser")
 
+    messages_found = []
+    logger.info (f"Reading sms in number {num_formated}")
     selector_row = ".table.table-bordered.wrptable.tbdif > tbody > tr"
     rows = soup.select (selector_row)
     for row_index in range(1, len(rows) + 1):
@@ -131,77 +133,83 @@ def send_message (num):
         duplicated = database.run_sql (query)
 
         if not duplicated:
-
-            # Format only for logs
-            if len (from_sms) > 10:
-                from_sms_formated = f"{from_sms[:10]}..."
-            else:
-                from_sms_formated = from_sms
-
-            if len (body_sms) > 20:
-                body_sms_formated = f"{body_sms[:20]}..."
-            else: 
-                body_sms_formated = body_sms
-
-            if len (date_sms) > 10:
-                date_sms_formated = f"{date_sms[:10]}..."
-            else:
-                date_sms_formated = date_sms
-
-            # Save row in local
-            message = f"Number: {num_formated} | From: {from_sms_formated} | Body: {body_sms_formated} | Date: {date_sms_formated}"
-            message_temp = message
-
-            # Generate id
-            while True:
-                # Generate ID with extra character
-                message_temp += "|"
-                id_sms = hashlib.md5(message_temp.encode("utf-8")).hexdigest()
-
-                # Validate id
-                query = f"""SELECT `id` FROM `history` WHERE id = "{id_sms}";"""
-                duplicated_id = database.run_sql (query)
-
-                # End loop
-                if not duplicated_id:
-                    break
-
-            # Debug lines
-            logger.info (f"{message} | Id: {id_sms}")
-
-            # Save in database
-            query = f"INSERT INTO {table} ({id_sms}, {num_formated}, {from_sms}, {body_sms})"
-            database.insert_rows (table=table, columns=["id", "number", "from_number", "body"], data=[[id_sms, num_formated, from_sms, body_sms]], nstring=False)
-
-            # Send data to API
-            if not debug_mode:
-
-                # encode url variables
-
-                from_sms_encoded = urllib.parse.quote(from_sms)
-                body_sms_encoded = urllib.parse.quote(body_sms)
-                id_sms_encoded = urllib.parse.quote(id_sms)
-                num_formated_encoded = urllib.parse.quote(num_formated)
-                api_key_encoded = urllib.parse.quote(api_key)
-
-                # Loop for retry api call 
-                api_url = f"https://receive-sms.live/receive?sender={from_sms_encoded}&msg={body_sms_encoded}&msg_id={id_sms_encoded}&number={num_formated_encoded}&key={api_key_encoded}"
-                logger.debug (api_url)
-                
-                while True: 
-                    res = requests.get (api_url, headers=headers)
-                    res.raise_for_status()
-                    response = res.content
-                    valid_call = response == b'Done'
-                    if valid_call:
-                        break
-                    else:
-                        wait_time = random.randint(1,5)
-                        time.sleep (wait_time)
-
+            messages_found.append ([from_sms, body_sms, date_sms])
         else:
             # Skip duplicates
             break
+
+    messages_found.reverse()
+    for message in messages_found:
+        from_sms, body_sms, date_sms = message
+
+        # Format only for logs
+        if len (from_sms) > 10:
+            from_sms_formated = f"{from_sms[:10]}..."
+        else:
+            from_sms_formated = from_sms
+
+        if len (body_sms) > 20:
+            body_sms_formated = f"{body_sms[:20]}..."
+        else: 
+            body_sms_formated = body_sms
+
+        if len (date_sms) > 10:
+            date_sms_formated = f"{date_sms[:10]}..."
+        else:
+            date_sms_formated = date_sms
+
+        # Save row in local
+        message = f"Number: {num_formated} | From: {from_sms_formated} | Body: {body_sms_formated} | Date: {date_sms_formated}"
+        message_temp = message
+
+        # Generate id
+        while True:
+            # Generate ID with extra character
+            message_temp += "|"
+            id_sms = hashlib.md5(message_temp.encode("utf-8")).hexdigest()
+
+            # Validate id
+            query = f"""SELECT `id` FROM `history` WHERE id = "{id_sms}";"""
+            duplicated_id = database.run_sql (query)
+
+            # End loop
+            if not duplicated_id:
+                break
+
+        # Debug lines
+        logger.info (f"{message} | Id: {id_sms}")
+
+        # Save in database
+        query = f"INSERT INTO {table} ({id_sms}, {num_formated}, {from_sms}, {body_sms})"
+        database.insert_rows (table=table, columns=["id", "number", "from_number", "body"], data=[[id_sms, num_formated, from_sms, body_sms]], nstring=False)
+
+        # Send data to API
+        if not debug_mode:
+
+            # encode url variables
+
+            from_sms_encoded = urllib.parse.quote(from_sms)
+            body_sms_encoded = urllib.parse.quote(body_sms)
+            id_sms_encoded = urllib.parse.quote(id_sms)
+            num_formated_encoded = urllib.parse.quote(num_formated)
+            api_key_encoded = urllib.parse.quote(api_key)
+
+            # Loop for retry api call 
+            api_url = f"https://receive-sms.live/receive?sender={from_sms_encoded}&msg={body_sms_encoded}&msg_id={id_sms_encoded}&number={num_formated_encoded}&key={api_key_encoded}"
+            logger.debug (api_url)
+            
+            while True: 
+                res = requests.get (api_url, headers=headers)
+                res.raise_for_status()
+                response = res.content
+                valid_call = response == b'Done'
+                if valid_call:
+                    break
+                else:
+                    wait_time = random.randint(1,5)
+                    time.sleep (wait_time)
+
+        
 
 def main ():
     """Main wrokflow of the program: create thread for extract data
