@@ -33,9 +33,6 @@ user = credentials.get ("user")
 password = credentials.get ("password")
 hostname = credentials.get ("hostname")
 
-# Initial debug
-logger.info ("")
-
 def format_date (date_text):
     """Convert date in text to date in standar format"""
 
@@ -167,22 +164,10 @@ def send_message (num):
         if not duplicated:
 
             # Save row in local
-            message = f"Number: {num_formated.rjust(12)} |  Date: {date_sms} | From: {from_sms} | Body: {body_sms}"
-            message_temp = message
+            message = f"Number: {num_formated.rjust(14)} |  Date: {date_sms} | From: {from_sms} | Body: {body_sms}"
 
             # Generate id
-            while True:
-                # Generate ID with extra character
-                message_temp += "|"
-                id_sms = hashlib.md5(message_temp.encode("utf-8")).hexdigest()
-
-                # Validate id
-                query = f"""SELECT `id` FROM `{table}` WHERE `msg_id` = "{id_sms}";"""
-                duplicated_id = database.run_sql (query)
-
-                # End loop
-                if not duplicated_id:
-                    break
+            id_sms = hashlib.md5(message.encode("utf-8")).hexdigest()
 
             # Debug lines
             logger.info (f"{message} | Id: {id_sms}")
@@ -229,10 +214,11 @@ if __name__ == "__main__":
     while True:
         if globals.running:
             start_time = time.time()
-            main ()      
+            # main ()      
+            print ("Running")
             
             # Wait time
-            if loop_mode:
+            if loop_mode and wait_time:
                 end_time = time.time()
                 delta_time = end_time - start_time
                 if delta_time < wait_time:
