@@ -40,13 +40,14 @@ def format_text (text):
 
     replace_chars = [
         "\n",
-        "'",
-        '"', 
         'a"',
         '[',
         '#',
         ']', 
         "+a"
+        'a"',
+        "'",
+        '"'
     ]
 
     clean_text = text
