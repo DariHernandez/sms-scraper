@@ -49,6 +49,7 @@ class _DB_manager ():
         error_formated += f"\n{sql}"
 
         logger.error (error_formated)
+        raise Exception (error_formated)
         
 
     def get_cursor_connector (self): 

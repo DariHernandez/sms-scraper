@@ -1,9 +1,11 @@
 import os
 import bs4
 import time
+import random
 import hashlib
 import requests
 import globals
+import urllib.parse
 from config import Config
 from logs import logger
 from database.my_sql import MySQL
@@ -30,11 +32,29 @@ user = credentials.get ("user")
 password = credentials.get ("password")
 hostname = credentials.get ("hostname")
 
-# Connect to database
-database = MySQL(hostname, dbname, user, password)
-
 # Initial debug
 logger.info ("")
+
+def format_text (text):
+    """Clean scraped text"""
+
+    replace_chars = [
+        "\n",
+        "'",
+        '"', 
+        'a"',
+        '[',
+        '#',
+        ']', 
+        "+a"
+    ]
+
+    clean_text = text
+    for char in replace_chars:
+        clean_text = clean_text.replace(char, "")
+
+    return clean_text
+
 
 def get_nums ():
     """Returns the number list from home page"""
@@ -66,6 +86,9 @@ def get_nums ():
 def send_message (num):
     """Get all message for the current number, and send to the API"""
 
+    # Connect to database
+    database = MySQL(hostname, dbname, user, password)
+
     num_formated = num.replace('/sms/', '')
 
     # End thread 
@@ -90,11 +113,9 @@ def send_message (num):
         selector_body_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(2)"
         selector_date_sms = f"{selector_row}:nth-child({row_index}) > td:nth-child(3)"
 
-        from_sms = str(soup.select (selector_from_sms)[0].getText()).replace("\n", "").replace('"', '').replace("'", "\'").replace('a"', "")
-        body_sms = str(soup.select (selector_body_sms)[0].getText()).replace("\n", "").replace('"', '').replace("'", "\'").replace('a"', "")
-        date_sms = str(soup.select (selector_date_sms)[0].getText()).replace("\n", "").replace('"', '').replace("'", "\'").replace('a"', "")
-
-        row_data = [num_formated, from_sms, body_sms]
+        from_sms = format_text(soup.select (selector_from_sms)[0].getText())
+        body_sms = format_text(soup.select (selector_body_sms)[0].getText())
+        date_sms = format_text(soup.select (selector_date_sms)[0].getText())
 
         # Skip duplicates
         query = f"""
@@ -106,7 +127,7 @@ def send_message (num):
                     `from_number` = "{from_sms}" 
                     and 
                     `number` = "{num_formated}";"""
-                    
+        
         duplicated = database.run_sql (query)
 
         if not duplicated:
@@ -114,12 +135,18 @@ def send_message (num):
             # Format only for logs
             if len (from_sms) > 10:
                 from_sms_formated = f"{from_sms[:10]}..."
+            else:
+                from_sms_formated = from_sms
 
             if len (body_sms) > 20:
                 body_sms_formated = f"{body_sms[:20]}..."
+            else: 
+                body_sms_formated = body_sms
 
             if len (date_sms) > 10:
                 date_sms_formated = f"{date_sms[:10]}..."
+            else:
+                date_sms_formated = date_sms
 
             # Save row in local
             message = f"Number: {num_formated} | From: {from_sms_formated} | Body: {body_sms_formated} | Date: {date_sms_formated}"
@@ -149,10 +176,29 @@ def send_message (num):
             # Send data to API
             if not debug_mode:
 
-                api_url = f"https://receive-sms.live/receive?sender={from_sms}&msg={body_sms}&msg_id={id_sms}&number={num_formated}&key={api_key}"
-                res = requests.get (api_url, headers=headers)
-                res.raise_for_status()
-            
+                # encode url variables
+
+                from_sms_encoded = urllib.parse.quote(from_sms)
+                body_sms_encoded = urllib.parse.quote(body_sms)
+                id_sms_encoded = urllib.parse.quote(id_sms)
+                num_formated_encoded = urllib.parse.quote(num_formated)
+                api_key_encoded = urllib.parse.quote(api_key)
+
+                # Loop for retry api call 
+                api_url = f"https://receive-sms.live/receive?sender={from_sms_encoded}&msg={body_sms_encoded}&msg_id={id_sms_encoded}&number={num_formated_encoded}&key={api_key_encoded}"
+                logger.debug (api_url)
+                
+                while True: 
+                    res = requests.get (api_url, headers=headers)
+                    res.raise_for_status()
+                    response = res.content
+                    valid_call = response == b'Done'
+                    if valid_call:
+                        break
+                    else:
+                        wait_time = random.randint(1,5)
+                        time.sleep (wait_time)
+
         else:
             # Skip duplicates
             break
