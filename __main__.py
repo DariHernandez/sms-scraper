@@ -1,12 +1,10 @@
 import re
 import bs4
 import time
-import random
 import globals
 import hashlib
 import datetime
 import requests
-import urllib.parse
 from config import Config
 from logs import logger
 from database.my_sql import MySQL
